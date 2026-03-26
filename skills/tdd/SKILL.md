@@ -200,7 +200,7 @@ The agent evaluates these 8 criteria against the plan:
    (Grep for constructor/function usage to find unlisted breakage)
 6. **Robustness** - What if all items fail? What if input is empty?
 7. **Gaps (Architectural)** - Are abstraction boundaries respected?
-8. **Blindspots** - Concurrency? Error propagation? Thread safety?
+8. **TDD Quality** - Test files listed? BATCH annotated? Dependencies correct?
 
 **If the agent reports FAIL findings:** Update the plan before
 proceeding. This is cheaper than fixing bugs in implementation.

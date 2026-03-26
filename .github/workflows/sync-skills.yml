@@ -7,6 +7,10 @@ on:
       - 'skills/tdd/**'
       - 'skills/spec/**'
 
+concurrency:
+  group: sync-skills
+  cancel-in-progress: true
+
 jobs:
   sync-tdd:
     if: contains(join(github.event.commits.*.modified, ','), 'skills/tdd/') || contains(join(github.event.commits.*.added, ','), 'skills/tdd/')

@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Node (if users clone into a node project)
+node_modules/

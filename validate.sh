@@ -72,7 +72,7 @@ check_links_in() {
     dir="$(dirname "$file")"
 
     local targets
-    targets="$(grep -oP '\[.*?\]\(\K[^)]+\.md\b[^)]*' "$file" 2>/dev/null || true)"
+    targets="$(sed -n 's/.*\[.*\](\([^)]*\.md[^)]*\)).*/\1/p' "$file" 2>/dev/null || true)"
 
     if [[ -z "$targets" ]]; then
         return
@@ -171,7 +171,7 @@ section "5. TDD SKILL.md phases are sequential (1-6)"
 
 tdd_skill="skills/tdd/SKILL.md"
 
-phase_count="$(grep -cP '^## Phase \d+:' "$tdd_skill" || true)"
+phase_count="$(grep -cE '^## Phase [0-9]+:' "$tdd_skill" || true)"
 if [[ "$phase_count" -eq 6 ]]; then
     pass "TDD SKILL.md has $phase_count phases"
 else
@@ -179,7 +179,7 @@ else
 fi
 
 expected=1
-phase_nums="$(grep -oP '^## Phase \K\d+' "$tdd_skill" || true)"
+phase_nums="$(grep -E '^## Phase [0-9]+:' "$tdd_skill" | sed 's/^## Phase //' | sed 's/:.*//' || true)"
 while IFS= read -r num; do
     [[ -z "$num" ]] && continue
     if [[ "$num" -eq "$expected" ]]; then
@@ -196,7 +196,7 @@ section "6. Spec SKILL.md phases are sequential (1-5)"
 
 spec_skill="skills/spec/SKILL.md"
 
-phase_count="$(grep -cP '^## Phase \d+:' "$spec_skill" || true)"
+phase_count="$(grep -cE '^## Phase [0-9]+:' "$spec_skill" || true)"
 if [[ "$phase_count" -eq 5 ]]; then
     pass "Spec SKILL.md has $phase_count phases"
 else
@@ -204,7 +204,7 @@ else
 fi
 
 expected=1
-phase_nums="$(grep -oP '^## Phase \K\d+' "$spec_skill" || true)"
+phase_nums="$(grep -E '^## Phase [0-9]+:' "$spec_skill" | sed 's/^## Phase //' | sed 's/:.*//' || true)"
 while IFS= read -r num; do
     [[ -z "$num" ]] && continue
     if [[ "$num" -eq "$expected" ]]; then
@@ -220,7 +220,7 @@ section "7. Quality checklist has exactly 8 points"
 # ─────────────────────────────────────────────
 
 checklist="skills/tdd/references/quality-checklist.md"
-checklist_count="$(grep -cP '^## \d+\.' "$checklist" || true)"
+checklist_count="$(grep -cE '^## [0-9]+\.' "$checklist" || true)"
 if [[ "$checklist_count" -eq 8 ]]; then
     pass "quality-checklist.md has $checklist_count points"
 else
@@ -228,7 +228,7 @@ else
 fi
 
 expected=1
-checklist_nums="$(grep -oP '^## \K\d+' "$checklist" || true)"
+checklist_nums="$(grep -E '^## [0-9]+\.' "$checklist" | sed 's/^## //' | sed 's/\..*//' || true)"
 while IFS= read -r num; do
     [[ -z "$num" ]] && continue
     if [[ "$num" -eq "$expected" ]]; then
@@ -243,7 +243,8 @@ done <<< "$checklist_nums"
 section "8. TDD SKILL.md 8-point summaries match checklist"
 # ─────────────────────────────────────────────
 
-checklist_names=(
+# Criteria 1-7 appear in both Phase 2.5 and Phase 6
+shared_names=(
     "Completeness"
     "Correctness"
     "Gaps (Functional)"
@@ -251,15 +252,24 @@ checklist_names=(
     "Regression"
     "Robustness"
     "Gaps (Architectural)"
-    "Blindspots"
 )
 
-for name in "${checklist_names[@]}"; do
+for name in "${shared_names[@]}"; do
     count="$(grep -c "\*\*$name\*\*" "$tdd_skill" || true)"
     if [[ "$count" -ge 2 ]]; then
         pass "\"$name\" in both plan review and quick reference"
     elif [[ "$count" -ge 1 ]]; then
         fail "\"$name\" found $count time(s) (expected in both Phase 2.5 and Phase 6)"
+    else
+        fail "\"$name\" not found in TDD SKILL.md"
+    fi
+done
+
+# Criterion 8 differs: "TDD Quality" in Phase 2.5, "Blindspots" in Phase 6
+for name in "TDD Quality" "Blindspots"; do
+    count="$(grep -c "\*\*$name\*\*" "$tdd_skill" || true)"
+    if [[ "$count" -ge 1 ]]; then
+        pass "\"$name\" in TDD SKILL.md"
     else
         fail "\"$name\" not found in TDD SKILL.md"
     fi
@@ -284,7 +294,10 @@ check_lessons() {
             break
         fi
         if $in_lessons; then
-            num="$(echo "$line" | grep -oP '^\d+(?=\. \*\*)' || true)"
+            num=""
+            if echo "$line" | grep -qE '^[0-9]+\. \*\*'; then
+                num="$(echo "$line" | sed 's/\..*//')"
+            fi
             if [[ -n "$num" ]]; then
                 lesson_nums+=("$num")
             fi
@@ -387,7 +400,7 @@ section "12. Agent frontmatter is valid"
 for agent in agents/*.md; do
     basename="$(basename "$agent")"
     for field in name description tools model; do
-        if grep -qP "^$field:" "$agent"; then
+        if grep -q "^${field}:" "$agent"; then
             pass "$basename has '$field' field"
         else
             fail "$basename missing '$field' field"
@@ -419,11 +432,11 @@ check_skill_frontmatter() {
     local file="$1"
     local label="$2"
 
-    if grep -qP '^name:' "$file"; then
+    if grep -q '^name:' "$file"; then
         local skill_name
-        skill_name="$(grep -oP '^name:\s*\K\S+' "$file")"
+        skill_name="$(sed -n 's/^name:[[:space:]]*//p' "$file" | head -1 | tr -d ' ')"
         pass "$label has 'name' field: $skill_name"
-        if echo "$skill_name" | grep -qP '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'; then
+        if echo "$skill_name" | grep -qE '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'; then
             pass "$label name format is valid"
         else
             fail "$label name '$skill_name' should be lowercase letters, numbers, and hyphens"
@@ -432,7 +445,7 @@ check_skill_frontmatter() {
         fail "$label missing 'name' field"
     fi
 
-    if grep -qP '^description:' "$file"; then
+    if grep -q '^description:' "$file"; then
         pass "$label has 'description' field"
     else
         fail "$label missing 'description' field"

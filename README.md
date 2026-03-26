@@ -53,8 +53,10 @@ git clone https://github.com/openkash/ai-agent-dev-workflow.git /tmp/dev-workflo
 mkdir -p .claude/skills/spec .claude/skills/tdd
 cp /tmp/dev-workflow/skills/spec/SKILL.md .claude/skills/spec/
 cp -r /tmp/dev-workflow/skills/spec/references/ .claude/skills/spec/
+cp -r /tmp/dev-workflow/skills/spec/project-configs/ .claude/skills/spec/
 cp /tmp/dev-workflow/skills/tdd/SKILL.md .claude/skills/tdd/
 cp -r /tmp/dev-workflow/skills/tdd/references/ .claude/skills/tdd/
+cp -r /tmp/dev-workflow/skills/tdd/project-configs/ .claude/skills/tdd/
 
 # Agents
 mkdir -p .claude/agents
