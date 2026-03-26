@@ -1,0 +1,91 @@
+name: Sync skills to standalone repos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/tdd/**'
+      - 'skills/spec/**'
+
+jobs:
+  sync-tdd:
+    if: contains(join(github.event.commits.*.modified, ','), 'skills/tdd/') || contains(join(github.event.commits.*.added, ','), 'skills/tdd/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ecosystem repo
+        uses: actions/checkout@v4
+
+      - name: Checkout TDD skill repo
+        uses: actions/checkout@v4
+        with:
+          repository: openkash/ai-agent-tdd-skill
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: target-tdd
+
+      - name: Sync TDD skill files
+        run: |
+          cp skills/tdd/SKILL.md target-tdd/SKILL.md
+          cp skills/tdd/PROJECT.md target-tdd/PROJECT.md
+          cp skills/tdd/references/* target-tdd/references/
+
+      - name: Create PR if changes exist
+        working-directory: target-tdd
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No changes to sync"
+            exit 0
+          fi
+          BRANCH="sync/from-ecosystem-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "Sync from ai-agent-dev-workflow"
+          git push origin "$BRANCH"
+          gh pr create \
+            --repo openkash/ai-agent-tdd-skill \
+            --title "Sync from ai-agent-dev-workflow" \
+            --body "Automated sync from [ai-agent-dev-workflow](https://github.com/openkash/ai-agent-dev-workflow). Review changes before merging."
+
+  sync-spec:
+    if: contains(join(github.event.commits.*.modified, ','), 'skills/spec/') || contains(join(github.event.commits.*.added, ','), 'skills/spec/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ecosystem repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Spec skill repo
+        uses: actions/checkout@v4
+        with:
+          repository: openkash/ai-agent-spec-skill
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: target-spec
+
+      - name: Sync Spec skill files
+        run: |
+          cp skills/spec/SKILL.md target-spec/SKILL.md
+          cp skills/spec/PROJECT.md target-spec/PROJECT.md
+          cp skills/spec/references/* target-spec/references/
+
+      - name: Create PR if changes exist
+        working-directory: target-spec
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No changes to sync"
+            exit 0
+          fi
+          BRANCH="sync/from-ecosystem-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "Sync from ai-agent-dev-workflow"
+          git push origin "$BRANCH"
+          gh pr create \
+            --repo openkash/ai-agent-spec-skill \
+            --title "Sync from ai-agent-dev-workflow" \
+            --body "Automated sync from [ai-agent-dev-workflow](https://github.com/openkash/ai-agent-dev-workflow). Review changes before merging."
