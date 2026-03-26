@@ -15,8 +15,23 @@ DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TDD_REPO="${SCRIPT_DIR}/../ai-agent-tdd-skill"
-SPEC_REPO="${SCRIPT_DIR}/../ai-agent-spec-skill"
+
+# Support both naming conventions for local checkouts
+if [[ -d "${SCRIPT_DIR}/../ai-agent-tdd-skill" ]]; then
+    TDD_REPO="${SCRIPT_DIR}/../ai-agent-tdd-skill"
+elif [[ -d "${SCRIPT_DIR}/../tdd-skill" ]]; then
+    TDD_REPO="${SCRIPT_DIR}/../tdd-skill"
+else
+    TDD_REPO="${SCRIPT_DIR}/../ai-agent-tdd-skill"
+fi
+
+if [[ -d "${SCRIPT_DIR}/../ai-agent-spec-skill" ]]; then
+    SPEC_REPO="${SCRIPT_DIR}/../ai-agent-spec-skill"
+elif [[ -d "${SCRIPT_DIR}/../spec-skill" ]]; then
+    SPEC_REPO="${SCRIPT_DIR}/../spec-skill"
+else
+    SPEC_REPO="${SCRIPT_DIR}/../ai-agent-spec-skill"
+fi
 
 sync_file() {
   local src="$1" dst="$2"
