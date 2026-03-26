@@ -1,0 +1,20 @@
+{
+  "name": "dev-workflow",
+  "version": "1.0.0",
+  "description": "Spec, Plan, Review, Implement, Verify — a complete AI development workflow with TDD, structured specifications, and independent review agents.",
+  "author": {
+    "name": "openkash"
+  },
+  "skills": [
+    {
+      "name": "spec",
+      "path": "skills/spec",
+      "description": "Structured specification with user stories, acceptance criteria, and interactive clarification"
+    },
+    {
+      "name": "tdd",
+      "path": "skills/tdd",
+      "description": "Test-driven development with chunk decomposition, JSON tracker, and 8-point quality checklist"
+    }
+  ]
+}
