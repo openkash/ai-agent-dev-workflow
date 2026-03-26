@@ -2,6 +2,8 @@
   "name": "dev-workflow",
   "version": "1.0.0",
   "description": "Spec, Plan, Review, Implement, Verify — a complete AI development workflow with TDD, structured specifications, and independent review agents.",
+  "keywords": ["tdd", "specification", "code-review", "workflow", "quality"],
+  "homepage": "https://github.com/openkash/ai-agent-dev-workflow",
   "author": {
     "name": "openkash"
   },
