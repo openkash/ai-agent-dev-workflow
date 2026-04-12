@@ -36,7 +36,9 @@ with no new domain logic (pure UI, config wiring), collapse to:
 Analysis -> Pre-Test (verify existing coverage) -> Implement ->
 Post-Test (regression) -> Quality Verification. Use a 1-chunk
 tracker (see [tracker-schema.md](references/tracker-schema.md)
-§Single-Chunk Features). Skip chunking and plan mode.
+§Single-Chunk Features). Skip chunking, plan mode, and Plan
+Review Gate (2.5). Quality Verification (Phase 6) still applies
+— review-impl + /simplify run for all features.
 
 ## Supporting Files
 
@@ -53,14 +55,18 @@ Load these on demand, not all upfront:
 ```text
 Phase 1: Analysis
 Phase 2: Planning
+  └─ 2.5: Plan Review Gate (review-plan agent — blocks Phase 3)
 Phase 3: Pre-Test (per chunk)
 Phase 4: Implementation (per chunk)
 Phase 5: Post-Test (per chunk)
 Phase 6: Quality Verification
+  └─ Gate: review-impl agent + /simplify (parallel — blocks completion)
 ```
 
 Each phase must complete before the next begins.
 For multi-chunk features, Phases 3-5 repeat per chunk.
+Gates are artifact-triggered: the tracker file triggers review-plan
+(2.5), all chunks complete triggers review-impl + /simplify (6).
 
 ---
 
@@ -179,36 +185,35 @@ editing before proceeding.
 Get user approval, then switch back to Normal Mode (`Shift+Tab`)
 before proceeding to implementation.
 
-### 2.5 Plan Review (8-Point Checklist on the Plan)
+### 2.5 Plan Review Gate
 
-**Before writing any code**, review the approved plan against the
-8-point quality checklist. This catches design bugs before they
-become code bugs.
+**GATE — The tracker artifact from 2.3 triggers this review.
+Do not proceed to Phase 3 until review completes.**
 
-**Use the `review-plan` agent** (`.claude/agents/review-plan.md`)
-to get an independent review. Spawn it as a subagent so the
+The tracker file is the review input (analogous to the spec
+skill's Phase 4 validation, but delegated to an independent
+agent for deeper code-aware analysis). Spawn the `review-plan`
+agent (`.claude/agents/review-plan.md`) as a subagent so the
 reviewer operates in a fresh context without author bias:
 
 ```
-Use the review-plan agent to review [path to tracker/plan]
+Use the review-plan agent to review [path to tracker]
 ```
 
-The agent evaluates these 8 criteria against the plan:
+The agent evaluates 8 criteria against the plan: completeness,
+correctness, functional gaps, standards, regression risk,
+robustness, architectural gaps, and TDD quality.
 
-1. **Completeness** - Does every acceptance criterion have a chunk?
-2. **Correctness** - Are catch scopes right? Are edge cases handled?
-3. **Gaps (Functional)** - Does the fix create dead code? If so,
-   add cleanup to the chunk
-4. **Standards** - Do proposed changes follow project patterns?
-5. **Regression** - Are all affected test files listed in chunks?
-   (Grep for constructor/function usage to find unlisted breakage)
-6. **Robustness** - What if all items fail? What if input is empty?
-7. **Gaps (Architectural)** - Are abstraction boundaries respected?
-8. **TDD Quality** - Test files listed? BATCH annotated? Dependencies correct?
+**FAIL:** Update the plan and re-run review-plan.
+**WARN:** Proceed with a note.
+**PASS:** Proceed to Phase 3.
+**Agent failure** (timeout, error, inconclusive): Fall back to
+self-check against [quality-checklist.md](references/quality-checklist.md),
+document the failure in the tracker's notes, and proceed.
 
-**If the agent reports FAIL findings:** Update the plan before
-proceeding. This is cheaper than fixing bugs in implementation.
-WARN findings can proceed with a note.
+Record the verdict in the tracker's top-level `plan_review` field
+(e.g., `"plan_review": "PASS"`). This makes the gate survive
+session resets — resumption checks this field before Phase 3.
 
 ---
 
@@ -342,21 +347,29 @@ for detailed criteria.
 7. **Gaps (Architectural)** - Abstraction boundaries respected
 8. **Blindspots** - Concurrency, security, edge environments
 
-**Use the `review-impl` agent for verification (medium+ features).**
-Agents tend to praise their own work — separating generation from
-evaluation produces more honest assessment. Spawn it as a subagent:
+**GATE — All chunks complete triggers parallel review.**
+
+Spawn both in a single message so they run concurrently:
+
+1. **`review-impl` agent** — verifies plan conformance, acceptance
+   criteria, test quality, regression, robustness, and dead code
+2. **`/simplify`** — reviews changed files for code reuse, quality,
+   and efficiency
 
 ```
-Use the review-impl agent to review implementation against [path to tracker/plan]
+In parallel:
+- Use the review-impl agent to review implementation against [path to tracker]
+- Run /simplify on changed files
 ```
 
-The agent verifies plan conformance, acceptance criteria, test
-quality, code quality, regression, robustness, dead code, and
-documentation — then produces a structured verdict.
+While the agents run, self-check against the quick reference above.
+Merge findings from all three sources (review-impl, /simplify,
+self-check). Address any FAIL findings before proceeding.
 
-Additionally, run `/simplify` for a parallel review of changed
-files for code reuse, quality, and efficiency. For small features,
-self-verification against the checklist is sufficient.
+**Agent failure** (timeout, error): If review-impl fails, fall back
+to self-check against the full quality-checklist.md. If /simplify
+is unavailable, review changed files manually for reuse and
+dead code. Document any agent failures in the tracker.
 
 ### Post-Implementation Documentation
 
@@ -480,11 +493,13 @@ Refer to `PROJECT.md` for project-specific commit conventions
 When resuming work on an in-progress feature:
 
 1. Read the JSON tracker to find current progress
-2. Read the plan file for detailed chunk descriptions
-3. Find next `pending` chunk where all `depends_on` are `complete`
-4. Read the chunk's `resume` field for instructions
-5. Follow TDD workflow (Phase 3 -> 4 -> 5)
-6. Update tracker status
+2. Check `plan_review` field — if missing or `"FAIL"`, run Phase 2.5
+   before proceeding
+3. Read the plan file for detailed chunk descriptions
+4. Find next `pending` chunk where all `depends_on` are `complete`
+5. Read the chunk's `resume` field for instructions
+6. Follow TDD workflow (Phase 3 -> 4 -> 5)
+7. Update tracker status
 
 **Tip:** Use `--resume` to continue a named session, or read the
 JSON tracker if starting a fresh session on an existing feature.

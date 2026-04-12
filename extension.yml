@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "dev-workflow"
   name: "Dev Workflow — Spec, TDD & Independent Review Agents"
-  version: "1.0.0"
+  version: "1.1.0"
   description: "Specify, plan, review, implement, verify — full TDD pipeline with isolated reviewer agents."
   author: "openkash"
   repository: "https://github.com/openkash/ai-agent-dev-workflow"

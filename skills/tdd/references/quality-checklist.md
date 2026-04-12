@@ -176,8 +176,8 @@ Verify edge cases that automated tests may miss.
 
 **Self-evaluation warning:** This is the hardest point to
 self-assess honestly. Generators naturally focus on what they
-built, not what they missed. For medium+ features, delegate
-this check to a subagent evaluator via `/simplify`.
+built, not what they missed. The `/simplify` skill running in
+parallel (see Phase 6) catches what self-evaluation misses.
 
 **Always check:**
 

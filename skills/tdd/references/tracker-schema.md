@@ -13,6 +13,7 @@ It is a local working file - not committed to version control.
   "issue": "GitHub/GitLab issue reference (e.g., org/repo#76)",
   "design_doc": "path/to/design-doc.md (optional)",
   "plan_doc": "path/to/plan.md (optional)",
+  "plan_review": "PASS",
   "chunks": [
     {
       "id": 1,
@@ -53,6 +54,7 @@ It is a local working file - not committed to version control.
 | `issue` | Yes | Issue tracker reference |
 | `design_doc` | No | Path to design document |
 | `plan_doc` | No | Path to plan document |
+| `plan_review` | No | Review-plan gate verdict: `"PASS"`, `"PASS-WITH-WARNINGS"`, or `"FAIL"`. Set in Phase 2.5. Session resumption checks this before Phase 3 |
 | `chunks` | Yes | Array of implementation chunks |
 | `quality_verification` | No | Filled after all chunks complete |
 

@@ -9,28 +9,37 @@ A complete development workflow for
 specify, plan, review, implement, verify.
 
 ```
-/spec          Clarify WHAT to build (user stories, acceptance criteria)
-    ↓
-/tdd           Plan HOW to build it (chunks, dependencies, tracker)
-    ↓
-review-plan    Independent agent validates the plan (8-point review)
-    ↓
-/tdd           Implement with TDD (failing test → code → pass)
-    ↓
-review-impl    Independent agent verifies implementation matches plan
+/spec            Clarify WHAT to build (user stories, acceptance criteria)
+    |
+/tdd             Plan HOW to build it (chunks, dependencies, tracker)
+    |
+    |--- GATE: tracker file triggers review-plan automatically
+    v
+review-plan      Independent 8-point plan review (blocks implementation)
+    |
+/tdd             Implement with TDD (failing test -> code -> pass)
+    |
+    |--- GATE: all chunks complete triggers parallel review
+    v
+review-impl      Verifies implementation matches plan ---+
+/simplify        Reviews code reuse and quality ----------+--- run in parallel
 ```
 
-`/tdd` handles both planning and implementation. The review agents
-run in isolated context. They didn't write the plan or code, so
-they evaluate honestly.
+`/tdd` handles both planning and implementation. Reviews are
+**artifact-triggered gates**, not optional suggestions. The tracker
+file triggers review-plan; chunk completion triggers review-impl.
+Both agents run in isolated context with no memory of writing the
+code, so they evaluate honestly.
 
 ## Why This Workflow
 
 > [!TIP]
+> - **Reviews are gates, not suggestions.** The tracker file triggers review-plan before coding starts. Chunk completion triggers review-impl + /simplify in parallel. No manual invocation needed, no option to skip.
 > - **The reviewer didn't write the code.** Review agents spawn in a fresh context, separate from the author. Bias eliminated by architecture, not instruction.
+> - **Scope is checked in both directions.** review-plan verifies every criterion has a chunk (completeness) AND every chunk serves a criterion (containment). Catches scope expansion before it becomes code.
 > - **Design bugs are caught before coding starts.** 8-point plan review before any code is written. Fixing a wrong abstraction in a plan costs minutes. In code, hours.
 > - **Specs are created, not just read.** `/spec` writes user stories with Given/When/Then acceptance criteria, then `/tdd` implements them. From "what should we build?" to passing tests.
-> - **Work survives context resets.** JSON tracker with per-chunk `resume` fields tells a new session exactly where to pick up.
+> - **Work survives context resets.** JSON tracker with per-chunk `resume` fields and `plan_review` verdict tells a new session exactly where to pick up.
 > - **One install, complete workflow.** Four pieces that work as a pipeline. No separate tools to discover, install, and wire.
 
 ## What's Included
@@ -39,8 +48,8 @@ they evaluate honestly.
 |-------|------|-----------|---------|
 | [spec](skills/spec/SKILL.md) | Skill | `/spec <feature>` | User stories, acceptance criteria, edge cases |
 | [tdd](skills/tdd/SKILL.md) | Skill | `/tdd <feature>` | Chunk decomposition, TDD cycle, quality checklist |
-| [review-plan](agents/review-plan.md) | Agent | "use the review-plan agent" | 8-point plan review before coding |
-| [review-impl](agents/review-impl.md) | Agent | "use the review-impl agent" | Checks code matches the plan and passes acceptance criteria |
+| [review-plan](agents/review-plan.md) | Agent | Triggered by /tdd | 8-point plan review with scope containment check |
+| [review-impl](agents/review-impl.md) | Agent | Triggered by /tdd | Checks code matches the plan and passes acceptance criteria |
 
 ## Installation
 
@@ -75,12 +84,11 @@ cp /tmp/dev-workflow/agents/*.md .claude/agents/
 
 ### Individual skills (standalone repos)
 
-If you only want one piece:
+If you only want the spec skill without the full workflow:
 
 - **Spec only:** [openkash/ai-agent-spec-skill](https://github.com/openkash/ai-agent-spec-skill)
-- **TDD only:** [openkash/ai-agent-tdd-skill](https://github.com/openkash/ai-agent-tdd-skill)
 
-The review agents are only available in this repo.
+> **Note:** [ai-agent-tdd-skill](https://github.com/openkash/ai-agent-tdd-skill) is deprecated. This repo is the canonical source for the TDD skill, which depends on the review agents for its gate system.
 
 ## Configuration
 
@@ -108,20 +116,24 @@ Produces `docs/specs/rate-limiting.md` with user stories and acceptance criteria
 /tdd implement rate limiting (spec: docs/specs/rate-limiting.md)
 ```
 The TDD skill decomposes the work into chunks, creates a tracker, and
-asks for approval. Then it spawns the review-plan agent automatically:
+asks for approval. The tracker file automatically triggers the
+review-plan gate:
 
 ```
-Use the review-plan agent to review docs/tdd-tracker.json
+GATE: tracker triggers review-plan agent (blocks Phase 3)
+-> Returns structured verdict (PASS/WARN/FAIL per criterion)
+-> FAIL: update plan and re-run. PASS: proceed to implementation.
 ```
-Returns a structured verdict (PASS/WARN/FAIL per criterion). Fix any
-FAILs before coding.
 
-After all chunks are implemented, the TDD skill spawns the review-impl agent:
+After all chunks are implemented, the TDD skill triggers the
+implementation review gate (both run in parallel):
 
 ```
-Use the review-impl agent to review implementation against docs/tdd-tracker.json
+GATE: all chunks complete triggers parallel review
+-> review-impl agent verifies plan conformance and acceptance criteria
+-> /simplify reviews code reuse and quality
+-> Address any FAIL findings before completing.
 ```
-Verifies every acceptance criterion and runs tests.
 
 ### Standalone agent use
 
@@ -167,7 +179,7 @@ The review agents are subagents (not slash-command skills) by design:
 |--------|----------------------|-------------------|
 | **Evaluator independence** | Runs in same context as author, biased toward own work | Fresh context, no memory of writing the plan/code |
 | **Context pollution** | Review details consume main window | Isolated, returns summary only |
-| **Automation** | User must remember to invoke | /tdd spawns automatically at Phase 2.5 and Phase 6 |
+| **Automation** | User must remember to invoke | /tdd gates trigger automatically from artifacts |
 | **Parallel execution** | Sequential in main context | Can run both reviews in parallel |
 | **Standalone use** | User invokes via `/review-plan` | User invokes via natural language ("review this plan") |
 

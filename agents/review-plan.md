@@ -47,21 +47,30 @@ Evaluate each criterion. For each one, give a verdict:
 
 ---
 
-### 1. Completeness
+### 1. Scope & Completeness
 
-Does every acceptance criterion have a chunk that implements it?
+Does every acceptance criterion have a chunk? Does every chunk serve a criterion?
 
-**How to check:**
+**How to check (completeness — nothing missing):**
 - List all acceptance criteria from the plan/tracker
 - For each criterion, identify which chunk implements it
 - Flag criteria with no implementing chunk
 - If a spec exists, cross-reference spec acceptance criteria against plan chunks
 - Check: are there spec criteria that no chunk addresses?
 
+**How to check (containment — nothing extra):**
+- For each chunk, identify which acceptance criteria it serves
+- Flag chunks that don't map to any acceptance criterion
+- Flag chunks that introduce capabilities beyond what was requested
+- If a spec exists, check the Out of Scope section — does any chunk
+  implement something explicitly scoped out?
+
 **Common fails:**
 - Spec says "error path" but no chunk handles error cases
 - Acceptance criterion is vague ("works correctly") — not testable
 - Edge cases from spec not covered by any chunk
+- Plan has cleanup/refactoring chunks that weren't part of the request
+- Plan adds "nice to have" features beyond stated acceptance criteria
 
 ---
 
