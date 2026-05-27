@@ -71,7 +71,7 @@ If changing file A requires changing file B to compile:
 Data layer (no deps) -> Domain layer -> UI layer -> Verification
 ```
 
-### Step 5: Write Acceptance Criteria and Resume Instructions
+### Step 5: Write Acceptance Criteria
 
 For each chunk, define **acceptance criteria** — explicit pass/fail
 conditions that determine whether the chunk is done. These are the
@@ -82,12 +82,11 @@ Good acceptance criteria are:
 - **Specific** — "search returns filtered results" not "search works"
 - **Complete** — cover happy path, edge cases, and error cases
 
-Then write compact resume instructions that include:
-- FILES to create/modify
-- WHAT the change does
-- PATTERN to follow (existing code reference)
-- DO NOT pitfalls
-- TDD conditions
+A resuming session reads `files_create`/`files_modify` (where),
+`name` (what), `tdd` (test conditions), and `acceptance_criteria`
+(pass/fail) directly. Use the optional `notes` field only for hints
+those required fields can't carry — typically a `PATTERN: file:function`
+reference or a `DO NOT: ...` pitfall.
 
 ---
 
@@ -124,10 +123,14 @@ Then write compact resume instructions that include:
   "files_create": [],
   "files_modify": ["src/ui/components/QuickView.tsx"],
   "test_files": [],
-  "tdd": "No unit test (UI). Verified by build.",
+  "tdd": "No unit test (UI: rendering only — pure callback threading, no hoisted state or branching effects). Verified by build.",
   "depends_on": [1]
 }
 ```
+
+> If this chunk introduced hoisted state, a `useEffect`/`LaunchedEffect`,
+> or input transformation, it would be a UI: state-holder chunk and need a
+> test on the extracted holder. See SKILL.md §3.1 state-holder detection.
 
 ### Chunk 3: Wiring (depends on chunks 1 and 2)
 ```json
@@ -176,9 +179,9 @@ Then write compact resume instructions that include:
 **Bad**: Chunk A changes shared type, Chunk B changes consumer
 **Good**: Single BATCH chunk that changes both together
 
-### Vague Resume Instructions
-**Bad**: "Implement the feature"
-**Good**: "FILES: Item.ts. Add buildShareText() method matching format in existing formatEvent(). PATTERN: Follow formatEvent() in EventService.ts:42. DO NOT: Change return type of getItems()."
+### Vague Chunk Names
+**Bad**: `name: "Implement the feature"`
+**Good**: `name: "buildShareText and toDuplicate helpers"` — paired with concrete `files_modify`, `tdd`, and (when needed) a `notes: "PATTERN: formatEvent() in EventService.ts:42. DO NOT change return type of getItems()."`
 
 ### Testing UI with Unit Tests
 **Bad**: Writing DOM/render tests for a simple layout change

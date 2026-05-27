@@ -1,11 +1,11 @@
 ---
-name: tdd
-description: "Structured TDD process: explores code, plans with chunk decomposition, writes failing tests first, implements to pass, and runs an 8-point quality checklist. Use when implementing features, fixing bugs, or refactoring with test verification."
+name: implement
+description: "Structured implementation process driven by TDD: explores code, plans with chunk decomposition, writes failing tests first, implements to pass, and runs an 8-point quality checklist. Use after /spec, or when implementing features, fixing bugs, or refactoring with test verification."
 argument-hint: "[description of feature, fix, or refactor]"
 effort: high
 ---
 
-# TDD Implementation Process
+# Implementation Process (Test-Driven)
 
 Implement the following using test-driven development: $ARGUMENTS
 
@@ -15,7 +15,7 @@ This is the highest-leverage pattern for agentic coding.
 
 ## Mapping to Claude Code Workflow
 
-| Claude Code Phase | TDD Phase | What Happens |
+| Claude Code Phase | Implement Phase | What Happens |
 |---|---|---|
 | **Explore** | Phase 1: Analysis | Read files, trace data flow, check standards |
 | **Plan** | Phase 2: Planning | Chunk decomposition, dependency graph, approval |
@@ -32,13 +32,14 @@ This is the highest-leverage pattern for agentic coding.
 | Large (cross-cutting, multi-session) | Full process + session resets between chunks |
 
 **Small feature shortcut:** For single-file or few-file changes
-with no new domain logic (pure UI, config wiring), collapse to:
-Analysis -> Pre-Test (verify existing coverage) -> Implement ->
-Post-Test (regression) -> Quality Verification. Use a 1-chunk
-tracker (see [tracker-schema.md](references/tracker-schema.md)
-§Single-Chunk Features). Skip chunking, plan mode, and Plan
-Review Gate (2.5). Quality Verification (Phase 6) still applies
-— review-impl + /simplify run for all features.
+with no new domain logic, collapse to: Analysis -> Pre-Test (verify
+existing coverage) -> Implement -> Post-Test (regression) -> Quality
+Verification. Use a 1-chunk tracker (see
+[tracker-schema.md](references/tracker-schema.md) §Single-Chunk
+Features). Only Plan Mode (2.4) and chunk decomposition (2.1-2.2)
+collapse — Phase 2.5 (review-plan) and Phase 6 (review-impl +
+/code-review) still run. Small features carry the same regression
+risk as large ones.
 
 ## Supporting Files
 
@@ -60,13 +61,13 @@ Phase 3: Pre-Test (per chunk)
 Phase 4: Implementation (per chunk)
 Phase 5: Post-Test (per chunk)
 Phase 6: Quality Verification
-  └─ Gate: review-impl agent + /simplify (parallel — blocks completion)
+  └─ Gate: review-impl agent + /code-review (parallel — blocks completion)
 ```
 
 Each phase must complete before the next begins.
 For multi-chunk features, Phases 3-5 repeat per chunk.
 Gates are artifact-triggered: the tracker file triggers review-plan
-(2.5), all chunks complete triggers review-impl + /simplify (6).
+(2.5), all chunks complete triggers review-impl + /code-review (6).
 
 ---
 
@@ -79,7 +80,7 @@ Gates are artifact-triggered: the tracker file triggers review-plan
 - Check `docs/specs/` for an existing spec file matching the feature.
   If found, use it as primary input — user stories, acceptance criteria,
   and edge cases become the basis for chunk decomposition in Phase 2.
-  (Specs are created by the [spec skill](https://github.com/openkash/ai-agent-spec-skill), an optional companion.)
+  (Specs are produced by the companion `/spec` skill in this plugin.)
 - Ask clarifying questions if the scope is ambiguous
 
 ### 1.2 Explore Current Code
@@ -141,7 +142,8 @@ Rules:
 - Chunks list files to create and modify
 - Chunks specify test files and TDD instructions
 - Chunks declare dependencies on other chunks
-- Each chunk has a `resume` field for session resumption
+- Optional `notes` field captures pattern hints / pitfalls a resuming
+  session can't infer from `name` + files + `tdd`
 
 ### 2.2 Dependency Graph
 
@@ -190,9 +192,7 @@ before proceeding to implementation.
 **GATE — The tracker artifact from 2.3 triggers this review.
 Do not proceed to Phase 3 until review completes.**
 
-The tracker file is the review input (analogous to the spec
-skill's Phase 4 validation, but delegated to an independent
-agent for deeper code-aware analysis). Spawn the `review-plan`
+The tracker file is the review input. Spawn the `review-plan`
 agent (`.claude/agents/review-plan.md`) as a subagent so the
 reviewer operates in a fresh context without author bias:
 
@@ -204,16 +204,14 @@ The agent evaluates 8 criteria against the plan: completeness,
 correctness, functional gaps, standards, regression risk,
 robustness, architectural gaps, and TDD quality.
 
-**FAIL:** Update the plan and re-run review-plan.
-**WARN:** Proceed with a note.
-**PASS:** Proceed to Phase 3.
-**Agent failure** (timeout, error, inconclusive): Fall back to
-self-check against [quality-checklist.md](references/quality-checklist.md),
-document the failure in the tracker's notes, and proceed.
+**FAIL:** update the plan and re-run review-plan.
+**WARN:** proceed with a note.
+**PASS:** proceed to Phase 3.
+**Agent failure** (timeout, error): fall back to self-check against
+[quality-checklist.md](references/quality-checklist.md) and proceed.
 
 Record the verdict in the tracker's top-level `plan_review` field
-(e.g., `"plan_review": "PASS"`). This makes the gate survive
-session resets — resumption checks this field before Phase 3.
+(e.g., `"plan_review": "PASS"`) so the gate survives session resets.
 
 ---
 
@@ -230,9 +228,18 @@ session resets — resumption checks this field before Phase 3.
 | Configuration / preferences | Defaults, type conversions, round-trips |
 | Composite / aggregating layer | Merge logic, fallbacks, empty states |
 | Interface / trait only | No test (tested via downstream fake) |
-| UI component | No test (build + regression) |
+| UI: state-holder / hoisted state | TEST — extract holder, unit-test transitions |
+| UI: rendering only (no logic) | No test (build + regression) |
 | DI wiring / config | No test (verified by compilation) |
 | Type migration / rename | No test (verified by compilation) |
+
+**State-holder detection:** Hoisted state (`mutableStateOf`,
+`useState`, `ref`, `@State`), branching effects (`LaunchedEffect`,
+`useEffect` with deps), or input transformation = testable logic.
+Extract the holder out of the framework component and unit-test
+the transitions. "UI = no test" is the most-abused row in this
+table; a state machine inside a Composable is still a state
+machine.
 
 ### 3.2 Write Failing Tests (or Verify Existing Coverage)
 
@@ -321,8 +328,9 @@ the tracker as handoff preserves more fidelity than compacted
 context, which loses information unpredictably.
 
 **Between chunks (preferred):** Start a new session. The JSON
-tracker + resume fields give the new session everything it needs.
-Use `/rename` to name the session for reference.
+tracker (`name` + `files_*` + `tdd` + `acceptance_criteria` + any
+`notes`) gives the new session everything it needs. Use `/rename`
+to name the session for reference.
 
 **Mid-chunk (fallback only):** If you must compact within a chunk,
 run `/compact Focus on the current chunk, tracker path, and test
@@ -347,29 +355,29 @@ for detailed criteria.
 7. **Gaps (Architectural)** - Abstraction boundaries respected
 8. **Blindspots** - Concurrency, security, edge environments
 
-**GATE — All chunks complete triggers parallel review.**
+**GATE — All chunks complete triggers parallel review.** Both
+reviewers are read-only as long as `/code-review` is invoked
+without `--fix`, so concurrent runs are safe. Spawn both in a
+single message:
 
-Spawn both in a single message so they run concurrently:
-
-1. **`review-impl` agent** — verifies plan conformance, acceptance
-   criteria, test quality, regression, robustness, and dead code
-2. **`/simplify`** — reviews changed files for code reuse, quality,
-   and efficiency
+1. **`review-impl` agent** — covers all 8 quality-checklist criteria
+   (completeness, correctness, gaps, standards + architecture,
+   regression, robustness + blindspots, dead code, documentation)
+2. **`/code-review`** — reports correctness bugs and reuse /
+   simplification cleanups on the diff
 
 ```
 In parallel:
 - Use the review-impl agent to review implementation against [path to tracker]
-- Run /simplify on changed files
+- Run /code-review on changed files
 ```
 
-While the agents run, self-check against the quick reference above.
-Merge findings from all three sources (review-impl, /simplify,
-self-check). Address any FAIL findings before proceeding.
+Merge findings from both sources, address any FAIL findings, then
+re-run the suite.
 
-**Agent failure** (timeout, error): If review-impl fails, fall back
-to self-check against the full quality-checklist.md. If /simplify
-is unavailable, review changed files manually for reuse and
-dead code. Document any agent failures in the tracker.
+**Agent failure** (timeout, error): fall back to self-check against
+the full [quality-checklist.md](references/quality-checklist.md).
+Document any agent failures in the tracker.
 
 ### Post-Implementation Documentation
 
@@ -401,74 +409,57 @@ what was reviewed, what was fixed, and what was intentionally left.
 
 1. **Tracker discipline** -
    Update status to `in_progress` BEFORE starting work
-2. **Constructor/signature cascading** -
-   When adding class dependencies or changing signatures,
-   grep ALL test files that call the affected code
-3. **Batch interconnected type changes** -
+2. **Batch interconnected type changes** -
    Changing a shared type's field? Change all consumers in one chunk
-4. **Platform quirks** -
+3. **Platform quirks** -
    Research boundary values, write tests BEFORE implementing
-5. **Don't over-chunk UI wiring** -
+4. **Don't over-chunk UI wiring** -
    Keep compatible signatures to avoid cascading changes
-6. **Sealed type formatting** -
+5. **Sealed type formatting** -
    Use common properties first; branch only for unique data
-7. **TDD means fix code, not tests** -
-   If test describes correct behavior and code doesn't match,
-   fix the code
-8. **Catch narrow exceptions for skip+continue** -
+6. **Catch narrow exceptions for skip+continue** -
    When converting `throw` to `continue` (resilience fix),
    narrow catch scope. Fatal errors (OOM, stack overflow)
    indicate the runtime is broken - continuing would cause
    cascading failures. Also verify cancellation exceptions
    can't reach the catch site
-9. **Fix sibling components together** -
+7. **Fix sibling components together** -
    If two components share the same bug pattern, fix both
    in one pass. Don't leave one broken for a future session
-10. **Check ALL required constructor params** -
-    When creating instances in tests or extensions, verify
-    no required params are missing
-11. **Extract testable logic from UI** -
-    If inline UI logic is worth testing, extract it as a
-    separate function. Test the function, not the UI
-12. **Adding checks breaks existing tests** -
-    When adding validation/permission checks to production
-    code, existing tests that skip setup for that check
-    will fail. Grep test files and add required setup
-13. **Clean up dead code in the same chunk** -
-    When a fix makes a code path unreachable, remove it
-    immediately. Don't leave dead code for a future pass.
-    The implementer has the best context for what's now dead
-14. **Review the plan before coding** -
-    Apply the 8-point quality checklist to the plan itself
-    (Phase 2.5). This is cheaper than finding design bugs
-    during implementation
-15. **Guard against false positive tests** -
+8. **Check ALL required constructor params** -
+   When creating instances in tests or extensions, verify
+   no required params are missing
+9. **Adding checks breaks existing tests** -
+   When adding validation/permission checks to production
+   code, existing tests that skip setup for that check
+   will fail. Grep test files and add required setup
+10. **Guard against false positive tests** -
     When asserting string/pattern presence, verify the match
     is in the right context - not in a comment, label, or
     unrelated field. Use precise assertions (line-level,
     regex-anchored) instead of broad substring checks.
     A broad check can pass for the wrong reason, hiding
     the real bug
-16. **Pre-written tests skip Phase 3** -
+11. **Pre-written tests skip Phase 3** -
     When failing tests already exist (compliance review, bug
     reproduction, user-provided test case), Phase 3 collapses
     to "verify tests still fail for the right reason." Don't
     rewrite or duplicate them - go straight to Phase 4
-17. **Stress-test your process scaffolding** -
+12. **Stress-test your process scaffolding** -
     Every process step encodes assumptions about model
     limitations. As models improve, re-evaluate whether
     scaffolding (sprint decomposition, heavy chunking,
     frequent resets) is still needed. Remove what no longer
     helps — simpler processes with fewer handoffs are faster
     and lose less context
-18. **Calibrate evaluation criteria over time** -
+13. **Calibrate evaluation criteria over time** -
     After Phase 6, compare your quality assessment to what
     the user actually flagged. If you marked "all criteria
     met" but the user found gaps, tighten the checklist or
     acceptance criteria for next time. This QA tuning loop
     — read evaluator output, find divergences from human
     expectations, refine criteria — compounds over sessions
-19. **Check dependency version changelogs during analysis** -
+14. **Check dependency version changelogs during analysis** -
     APIs can change behavior across minor versions without
     changing their signature. A method that fully re-executes
     in v1.0 may only recompose a subset in v1.1. During
@@ -497,7 +488,8 @@ When resuming work on an in-progress feature:
    before proceeding
 3. Read the plan file for detailed chunk descriptions
 4. Find next `pending` chunk where all `depends_on` are `complete`
-5. Read the chunk's `resume` field for instructions
+5. Read `name`, `files_create`/`files_modify`, `tdd`,
+   `acceptance_criteria`, and any `notes` on that chunk
 6. Follow TDD workflow (Phase 3 -> 4 -> 5)
 7. Update tracker status
 

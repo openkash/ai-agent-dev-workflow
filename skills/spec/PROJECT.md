@@ -69,7 +69,7 @@ what X already does.
 
 ```text
 # Examples:
-#   Event CRUD follows EventCoordinator pattern (create/update/delete)
+#   Domain CRUD goes through the central Coordinator/Service layer
 #   All API endpoints use the shared error response format in errors.md
 #   New CLI commands follow the 'verb-noun' naming convention
 #   UI forms use the shared validation component with error display

@@ -9,7 +9,7 @@ This plugin collects no data. It consists entirely of markdown files (skills, ag
 
 ## What This Plugin Does
 
-- Provides two skills (`/spec`, `/tdd`) that guide Claude Code through structured development workflows
+- Provides two skills (`/spec`, `/implement`) that guide Claude Code through structured development workflows
 - Provides two review agents (`review-plan`, `review-impl`) that evaluate plans and implementations
 - All processing happens locally in your Claude Code session
 

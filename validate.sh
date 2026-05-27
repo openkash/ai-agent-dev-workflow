@@ -36,13 +36,12 @@ required_files=(
     ".claude-plugin/plugin.json"
     "LICENSE"
     "README.md"
-    "sync.sh"
-    # TDD skill
-    "skills/tdd/SKILL.md"
-    "skills/tdd/PROJECT.md"
-    "skills/tdd/references/chunk-template.md"
-    "skills/tdd/references/tracker-schema.md"
-    "skills/tdd/references/quality-checklist.md"
+    # Implement skill
+    "skills/implement/SKILL.md"
+    "skills/implement/PROJECT.md"
+    "skills/implement/references/chunk-template.md"
+    "skills/implement/references/tracker-schema.md"
+    "skills/implement/references/quality-checklist.md"
     # Spec skill
     "skills/spec/SKILL.md"
     "skills/spec/PROJECT.md"
@@ -93,11 +92,11 @@ check_links_in() {
 }
 
 check_links_in "README.md"
-check_links_in "skills/tdd/SKILL.md"
+check_links_in "skills/implement/SKILL.md"
 check_links_in "skills/spec/SKILL.md"
-check_links_in "skills/tdd/references/chunk-template.md"
-check_links_in "skills/tdd/references/tracker-schema.md"
-check_links_in "skills/tdd/references/quality-checklist.md"
+check_links_in "skills/implement/references/chunk-template.md"
+check_links_in "skills/implement/references/tracker-schema.md"
+check_links_in "skills/implement/references/quality-checklist.md"
 check_links_in "skills/spec/references/spec-template.md"
 check_links_in "skills/spec/references/clarification-taxonomy.md"
 check_links_in "skills/spec/references/validation-checklist.md"
@@ -142,8 +141,8 @@ validate_json_blocks() {
     done < "$file"
 }
 
-validate_json_blocks "skills/tdd/references/tracker-schema.md"
-validate_json_blocks "skills/tdd/references/chunk-template.md"
+validate_json_blocks "skills/implement/references/tracker-schema.md"
+validate_json_blocks "skills/implement/references/chunk-template.md"
 
 # ─────────────────────────────────────────────
 section "4. plugin.json has required fields"
@@ -166,26 +165,26 @@ else
 fi
 
 # ─────────────────────────────────────────────
-section "5. TDD SKILL.md phases are sequential (1-6)"
+section "5. Implement SKILL.md phases are sequential (1-6)"
 # ─────────────────────────────────────────────
 
-tdd_skill="skills/tdd/SKILL.md"
+implement_skill="skills/implement/SKILL.md"
 
-phase_count="$(grep -cE '^## Phase [0-9]+:' "$tdd_skill" || true)"
+phase_count="$(grep -cE '^## Phase [0-9]+:' "$implement_skill" || true)"
 if [[ "$phase_count" -eq 6 ]]; then
-    pass "TDD SKILL.md has $phase_count phases"
+    pass "Implement SKILL.md has $phase_count phases"
 else
-    fail "TDD SKILL.md has $phase_count phases (expected 6)"
+    fail "Implement SKILL.md has $phase_count phases (expected 6)"
 fi
 
 expected=1
-phase_nums="$(grep -E '^## Phase [0-9]+:' "$tdd_skill" | sed 's/^## Phase //' | sed 's/:.*//' || true)"
+phase_nums="$(grep -E '^## Phase [0-9]+:' "$implement_skill" | sed 's/^## Phase //' | sed 's/:.*//' || true)"
 while IFS= read -r num; do
     [[ -z "$num" ]] && continue
     if [[ "$num" -eq "$expected" ]]; then
-        pass "TDD Phase $num is sequential"
+        pass "Implement Phase $num is sequential"
     else
-        fail "TDD Phase $num out of order (expected $expected)"
+        fail "Implement Phase $num out of order (expected $expected)"
     fi
     expected=$((expected + 1))
 done <<< "$phase_nums"
@@ -219,7 +218,7 @@ done <<< "$phase_nums"
 section "7. Quality checklist has exactly 8 points"
 # ─────────────────────────────────────────────
 
-checklist="skills/tdd/references/quality-checklist.md"
+checklist="skills/implement/references/quality-checklist.md"
 checklist_count="$(grep -cE '^## [0-9]+\.' "$checklist" || true)"
 if [[ "$checklist_count" -eq 8 ]]; then
     pass "quality-checklist.md has $checklist_count points"
@@ -240,7 +239,7 @@ while IFS= read -r num; do
 done <<< "$checklist_nums"
 
 # ─────────────────────────────────────────────
-section "8. TDD SKILL.md 8-point summaries match checklist"
+section "8. Implement SKILL.md 8-point summaries match checklist"
 # ─────────────────────────────────────────────
 
 # Phase 6 Quick Reference lists criteria 1-7 in bold; Phase 2.5 delegates
@@ -258,23 +257,23 @@ phase6_names=(
 )
 
 for name in "${phase6_names[@]}"; do
-    count="$(grep -c "\*\*$name\*\*" "$tdd_skill" || true)"
+    count="$(grep -c "\*\*$name\*\*" "$implement_skill" || true)"
     if [[ "$count" -ge 1 ]]; then
         pass "\"$name\" in Phase 6 Quick Reference"
     else
-        fail "\"$name\" not found in TDD SKILL.md"
+        fail "\"$name\" not found in Implement SKILL.md"
     fi
 done
 
 # Phase 2.5 is an artifact-triggered gate that delegates to review-plan agent.
 # Verify the gate structure exists.
-if grep -q "GATE.*tracker.*triggers" "$tdd_skill"; then
+if grep -q "GATE.*tracker.*triggers" "$implement_skill"; then
     pass "Phase 2.5 has artifact-triggered gate"
 else
     fail "Phase 2.5 missing artifact-triggered gate pattern"
 fi
 
-if grep -q "plan_review" "$tdd_skill"; then
+if grep -q "plan_review" "$implement_skill"; then
     pass "SKILL.md references plan_review tracker field"
 else
     fail "SKILL.md missing plan_review tracker field reference"
@@ -327,14 +326,14 @@ check_lessons() {
     done
 }
 
-check_lessons "$tdd_skill" "TDD"
+check_lessons "$implement_skill" "Implement"
 check_lessons "$spec_skill" "Spec"
 
 # ─────────────────────────────────────────────
 section "10. PROJECT.md templates have required sections"
 # ─────────────────────────────────────────────
 
-tdd_sections=(
+implement_sections=(
     "Build & Test Commands"
     "Architecture Patterns"
     "Standards to Verify"
@@ -343,11 +342,11 @@ tdd_sections=(
     "Documentation Location"
 )
 
-for section_name in "${tdd_sections[@]}"; do
-    if grep -q "$section_name" "skills/tdd/PROJECT.md"; then
-        pass "TDD PROJECT.md has \"$section_name\""
+for section_name in "${implement_sections[@]}"; do
+    if grep -q "$section_name" "skills/implement/PROJECT.md"; then
+        pass "Implement PROJECT.md has \"$section_name\""
     else
-        fail "TDD PROJECT.md missing \"$section_name\""
+        fail "Implement PROJECT.md missing \"$section_name\""
     fi
 done
 
@@ -372,11 +371,11 @@ section "11. No project-specific leaks in core files"
 # ─────────────────────────────────────────────
 
 core_files=(
-    "skills/tdd/SKILL.md"
+    "skills/implement/SKILL.md"
     "skills/spec/SKILL.md"
-    "skills/tdd/references/chunk-template.md"
-    "skills/tdd/references/tracker-schema.md"
-    "skills/tdd/references/quality-checklist.md"
+    "skills/implement/references/chunk-template.md"
+    "skills/implement/references/tracker-schema.md"
+    "skills/implement/references/quality-checklist.md"
     "skills/spec/references/spec-template.md"
     "skills/spec/references/clarification-taxonomy.md"
     "skills/spec/references/validation-checklist.md"
@@ -414,19 +413,19 @@ for agent in agents/*.md; do
 done
 
 # ─────────────────────────────────────────────
-section "13. TDD SKILL.md references review agents"
+section "13. Implement SKILL.md references review agents"
 # ─────────────────────────────────────────────
 
-if grep -q "review-plan" "$tdd_skill"; then
-    pass "TDD SKILL.md references review-plan agent"
+if grep -q "review-plan" "$implement_skill"; then
+    pass "Implement SKILL.md references review-plan agent"
 else
-    fail "TDD SKILL.md does not reference review-plan agent"
+    fail "Implement SKILL.md does not reference review-plan agent"
 fi
 
-if grep -q "review-impl" "$tdd_skill"; then
-    pass "TDD SKILL.md references review-impl agent"
+if grep -q "review-impl" "$implement_skill"; then
+    pass "Implement SKILL.md references review-impl agent"
 else
-    fail "TDD SKILL.md does not reference review-impl agent"
+    fail "Implement SKILL.md does not reference review-impl agent"
 fi
 
 # ─────────────────────────────────────────────
@@ -463,14 +462,14 @@ check_skill_frontmatter() {
     fi
 }
 
-check_skill_frontmatter "$tdd_skill" "TDD SKILL.md"
+check_skill_frontmatter "$implement_skill" "Implement SKILL.md"
 check_skill_frontmatter "$spec_skill" "Spec SKILL.md"
 
 # ─────────────────────────────────────────────
 section "15. SKILL.md files are under 500 lines"
 # ─────────────────────────────────────────────
 
-for skill_file in "$tdd_skill" "$spec_skill"; do
+for skill_file in "$implement_skill" "$spec_skill"; do
     label="$(basename "$(dirname "$skill_file")")"
     lines="$(wc -l < "$skill_file")"
     if [[ "$lines" -le 510 ]]; then
@@ -484,13 +483,13 @@ done
 section "16. Example project configs are valid"
 # ─────────────────────────────────────────────
 
-for config in skills/tdd/project-configs/*.md; do
+for config in skills/implement/project-configs/*.md; do
     basename="$(basename "$config")"
-    for section_name in "${tdd_sections[@]}"; do
+    for section_name in "${implement_sections[@]}"; do
         if grep -q "$section_name" "$config"; then
-            pass "tdd/$basename has \"$section_name\""
+            pass "implement/$basename has \"$section_name\""
         else
-            fail "tdd/$basename missing \"$section_name\""
+            fail "implement/$basename missing \"$section_name\""
         fi
     done
 done
