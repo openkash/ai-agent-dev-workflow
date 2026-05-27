@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-27
+
+### Changed (breaking)
+
+- Renamed `/tdd` to `/implement`. The slash command is now `/implement <feature>`. Speckit command ID is `speckit.dev-workflow.implement` (alias `speckit.implement`); the previous `speckit.dev-workflow.tdd` ID no longer resolves. Skill directory moved from `skills/tdd/` to `skills/implement/`.
+- Tracker filename convention is now `impl-tracker-<feature>.json`. The previous `tdd-tracker-*.json` prefix is no longer recognized by review-plan / review-impl.
+- Phase 6 parallel reviewer is now `/code-review` (read-only) instead of `/simplify` (which writes to the tree). Running a writer concurrently with review-impl was racy; the review pair is now both read-only.
+- This repo is now the only distribution channel. `openkash/ai-agent-spec-skill` and `openkash/ai-agent-tdd-skill` are deprecated; the spec-sync workflow and `sync.sh` script have been removed. Install via the Claude Code plugin or copy directly from this repo.
+
+### Added
+
+- UI state-holder vs rendering-only distinction in the test-strategy table. UI chunks that introduce `mutableStateOf`, `LaunchedEffect`/`useEffect`, hoisted state, or input transformation must extract a state holder and unit-test its transitions. Pure prop/callback threading with no logic keeps the "no test" exemption.
+- Both review-plan and review-impl now check the state-holder exemption explicitly. A chunk that claims "Pure UI — no test" while introducing a holder is flagged as a FAIL.
+- Small-feature shortcut keeps both review gates. Only Plan Mode (Phase 2.4) and chunk decomposition (Phase 2.1-2.2) collapse for 1-chunk features; review-plan and review-impl + /code-review still run.
+
+### Migration
+
+- Replace any saved `/tdd <feature>` invocations with `/implement <feature>`.
+- Rename existing in-flight tracker files from `tdd-tracker-*.json` to `impl-tracker-*.json` if you want them picked up by the agents on resumption.
+- Update any project-level docs or onboarding notes that reference `skills/tdd/` to `skills/implement/`.
+- If you customised `skills/tdd/PROJECT.md`, copy it to `skills/implement/PROJECT.md` before pulling — the directory rename means the old path will not exist after the update.
+- The `resume` field on tracker chunks has been removed; per-chunk pattern hints and pitfalls now live in the optional `notes` field.
+
 ## [1.1.0] - 2026-04-12
 
 ### Changed
@@ -32,5 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example configs for Android/Kotlin, TypeScript/Node, Python/Django, Python/pytest, Rust/CLI, Rust/Cargo
 - Session resumption via JSON tracker with per-chunk resume fields
 
+[2.0.0]: https://github.com/openkash/ai-agent-dev-workflow/releases/tag/v2.0.0
 [1.1.0]: https://github.com/openkash/ai-agent-dev-workflow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/openkash/ai-agent-dev-workflow/releases/tag/v1.0.0

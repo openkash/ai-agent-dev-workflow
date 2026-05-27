@@ -2,9 +2,9 @@ schema_version: "1.0"
 
 extension:
   id: "dev-workflow"
-  name: "Dev Workflow — Spec, TDD & Independent Review Agents"
-  version: "1.1.0"
-  description: "Specify, plan, review, implement, verify — full TDD pipeline with isolated reviewer agents."
+  name: "Dev Workflow — Spec, Implement & Independent Review Agents"
+  version: "2.0.0"
+  description: "Specify, plan, review, implement, verify — full test-driven pipeline with isolated reviewer agents."
   author: "openkash"
   repository: "https://github.com/openkash/ai-agent-dev-workflow"
   license: "Apache-2.0"
@@ -23,10 +23,10 @@ provides:
       description: "Generate structured specifications with user stories, acceptance criteria, interactive clarification, and 8-point validation"
       aliases: ["speckit.spec"]
 
-    - name: "speckit.dev-workflow.tdd"
-      file: "skills/tdd/SKILL.md"
-      description: "TDD implementation with chunk decomposition, dependency graph, JSON tracker, and per-chunk red-green-refactor cycle"
-      aliases: ["speckit.tdd"]
+    - name: "speckit.dev-workflow.implement"
+      file: "skills/implement/SKILL.md"
+      description: "Test-driven implementation with chunk decomposition, dependency graph, JSON tracker, and per-chunk red-green-refactor cycle"
+      aliases: ["speckit.implement"]
 
     - name: "speckit.dev-workflow.review-plan"
       file: "agents/review-plan.md"
@@ -38,7 +38,7 @@ provides:
 
   config:
     - name: "PROJECT.md"
-      template: "skills/tdd/PROJECT.md"
+      template: "skills/implement/PROJECT.md"
       description: "Project-specific settings (build commands, test commands, standards, blindspots)"
       required: false
 
@@ -57,6 +57,7 @@ hooks:
 
 tags:
   - "tdd"
+  - "implement"
   - "specification"
   - "review"
   - "claude-code"

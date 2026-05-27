@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Structured specification process: explores code, generates user stories with testable acceptance criteria, resolves ambiguities through interactive clarification, validates completeness, and outputs a lightweight spec. Use before /tdd to clarify WHAT to build."
+description: "Structured specification process: explores code, generates user stories with testable acceptance criteria, resolves ambiguities through interactive clarification, validates completeness, and outputs a lightweight spec. Use before /implement to clarify WHAT to build."
 argument-hint: "[description of feature, fix, or change]"
 effort: high
 ---
@@ -22,7 +22,7 @@ This is the highest-leverage pattern for complex features.
 | **Plan** | Phase 2: Specify | User stories, acceptance criteria, edge cases |
 | **Plan** | Phase 3: Clarify | Interactive disambiguation (max 5 questions) |
 | **Plan** | Phase 4: Validate | 8-point spec quality checklist |
-| **Plan** | Phase 5: Handoff | Summary report, suggest /tdd |
+| **Plan** | Phase 5: Handoff | Summary report, suggest /implement |
 
 ## When to Use This Process
 
@@ -354,11 +354,11 @@ Output to the user:
 - Validation result (Ready or Ready-with-warnings)
 - Any deferred ambiguities or validation warnings
 
-### 5.2 TDD Integration
+### 5.2 Implementation Integration
 
-Explain how the spec maps to TDD implementation:
+Explain how the spec maps to /implement:
 
-| Spec Section | TDD Phase | How to Use |
+| Spec Section | Implement Phase | How to Use |
 |---|---|---|
 | User Stories | Phase 1: Analysis | Scope of what to explore |
 | Acceptance Criteria | Phase 3: Pre-Test | Write these as failing tests |
@@ -369,19 +369,19 @@ Explain how the spec maps to TDD implementation:
 ### 5.3 Suggest Next Step
 
 ```
-Next: /tdd implement <feature> (spec: docs/specs/<feature>.md)
+Next: /implement <feature> (spec: docs/specs/<feature>.md)
 ```
 
 If the spec has warnings, note them:
 "The spec has N unresolved warnings — review the Notes section
-before starting TDD implementation."
+before starting implementation."
 
 **Non-code projects:** If the spec covers content, configuration,
-or documentation (no executable code), adapt the TDD mapping:
+or documentation (no executable code), adapt the mapping:
 - "Write these as failing tests" → "Write these as validation
   criteria or review checks"
 - "Starting point for chunks" → "Starting point for content chunks"
-- Suggest a structured implementation order rather than `/tdd`
+- Suggest a structured implementation order rather than `/implement`
 
 ---
 

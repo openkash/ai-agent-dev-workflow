@@ -72,9 +72,9 @@ no file paths, no algorithms.>
 | <path/to/file> | <what it does> | <what changes> |
 | <path/to/module> | <what it does> | <what changes> |
 
-## TDD Mapping
+## Implementation Mapping
 
-| Spec Section | TDD Phase | How to Use |
+| Spec Section | Implement Phase | How to Use |
 |---|---|---|
 | User Stories | Phase 1: Analysis | Scope of what to explore |
 | Acceptance Criteria | Phase 3: Pre-Test | Write these as failing tests |
@@ -167,19 +167,19 @@ spec-version: 1                # Bumped when spec is re-run/updated
 ### Affected Components
 
 - File paths and modules from Phase 1 exploration
-- Brief role description so TDD can skip redundant exploration
+- Brief role description so /implement can skip redundant exploration
 - Impact column describes what will change, not how
 
-### TDD Mapping
+### Implementation Mapping
 
 - Always include this section — it's the bridge to implementation
-- Maps each spec section to the TDD phase that consumes it
-- TDD skill can reference this table to know where to look
+- Maps each spec section to the /implement phase that consumes it
+- The /implement skill references this table to know where to look
 - **Non-code projects:** If the deliverable is content, config, or
   documentation rather than executable code, adapt the mapping:
   replace "failing tests" with "validation criteria or review checks"
   and "chunk decomposition" with "content chunking." Suggest a
-  structured build order rather than referencing `/tdd` directly
+  structured build order rather than referencing `/implement` directly
 
 ### Clarifications
 

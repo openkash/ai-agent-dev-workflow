@@ -3,6 +3,8 @@
 The tracker file is the single source of truth for feature implementation progress.
 It is a local working file - not committed to version control.
 
+**Filename convention:** Trackers use `impl-tracker-<feature>.json`.
+
 ---
 
 ## Schema
@@ -25,8 +27,7 @@ It is a local working file - not committed to version control.
       "acceptance_criteria": ["Criterion 1", "Criterion 2"],
       "tdd": "Write test for X. Run -> fail -> implement -> pass.",
       "depends_on": [],
-      "resume": "Compact implementation instructions for session resumption.",
-      "notes": "Optional notes about decisions or constraints."
+      "notes": "Optional notes: decisions, constraints, pattern to follow (file:function), and pitfalls to avoid."
     }
   ],
   "quality_verification": {
@@ -71,8 +72,7 @@ It is a local working file - not committed to version control.
 | `acceptance_criteria` | Yes | Array of testable pass/fail conditions for this chunk |
 | `tdd` | Yes | TDD instructions: what to test, expected fail, then pass |
 | `depends_on` | Yes | Array of chunk IDs that must be `complete` first |
-| `resume` | Yes | Compact instructions for resuming this chunk |
-| `notes` | No | Optional notes about decisions or constraints |
+| `notes` | No | Optional decisions, constraints, pattern hints (file:function), and pitfalls. The chunk's `name` + `files_create`/`files_modify` + `tdd` already convey the rest of what a resuming session needs |
 
 ---
 
@@ -92,29 +92,18 @@ Rules:
 
 ---
 
-## Resume Field Format
+## Resuming a Chunk
 
-The `resume` field should be a compact instruction block that enables resuming
-the chunk in a new session without reading the full plan. Structure:
+A resuming session reads the chunk's required fields directly:
+`name` (what), `files_create` + `files_modify` (where), `tdd` (test
+conditions), `acceptance_criteria` (pass/fail). Add a `notes` entry
+when there's something a resuming session can't infer from those —
+typically a `PATTERN: file:function` hint or a `DO NOT: ...` pitfall.
 
-```text
-FILES: List files to create/modify
-WHAT: One-sentence description of the change
-PATTERN: Which existing code to follow (file:function)
-DO NOT: Common pitfalls to avoid
-TDD: Specific test conditions
-```
-
-### Example
-
-```text
-FILES: Add searchItems() to ItemRepository interface.
-Implement in SqlItemRepository using full-text search.
-Extend FakeItemRepository with searchItems().
-WHAT: Add search capability to repository layer.
-PATTERN: Follow existing getItemsByDate() for query pattern.
-DO NOT: Change service return types - wrap result internally.
-TDD: Test empty query returns empty, partial match returns filtered, category filtering works.
+```json
+{
+  "notes": "PATTERN: follow getItemsByDate() in SqlItemRepository. DO NOT change service return types — wrap result internally."
+}
 ```
 
 ---
@@ -126,8 +115,7 @@ When multiple files must change together (won't compile between), prefix the
 
 ```json
 {
-  "tdd": "BATCH - all 3 files must change together. No standalone unit test (UI). Verified by build + full suite regression. Update 16 breaking assertions in ServiceTest.",
-  "resume": "BATCH - all 3 files must change together (won't compile between). FILES: AppState.ts, AppService.ts, AppView.tsx. ..."
+  "tdd": "BATCH - all 3 files must change together. No standalone unit test (UI). Verified by build + full suite regression. Update 16 breaking assertions in ServiceTest."
 }
 ```
 

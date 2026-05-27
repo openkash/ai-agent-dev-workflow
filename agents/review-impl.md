@@ -1,6 +1,6 @@
 ---
 name: review-impl
-description: "Reviews implementation against the TDD plan. Checks for plan conformance, drift, missed acceptance criteria, and code quality. Use after implementation chunks are complete, before final commit."
+description: "Reviews implementation against the plan. Checks for plan conformance, drift, missed acceptance criteria, and code quality. Use after implementation chunks are complete, before final commit."
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
@@ -16,13 +16,14 @@ you are reviewing someone else's work. Be thorough, specific, and honest.
 ## Inputs
 
 You will receive:
-- A **plan document** path (TDD tracker JSON or plan markdown)
+- A **plan document** path (implementation tracker JSON or plan markdown)
 - The **project root** (for reading implementation and tests)
 - Optionally, a list of **changed files** or a git diff range
 
-If no plan path is given, look for the most recent `tdd-tracker.json`
-in `docs/`. If no changed files are given, derive them from the tracker's
-`files_create` and `files_modify` arrays across all chunks.
+If no plan path is given, look for the most recent
+`impl-tracker-*.json` in `docs/`. If no changed files are given, derive
+them from the tracker's `files_create` and `files_modify` arrays across
+all chunks.
 
 ## Review Process
 
@@ -53,7 +54,7 @@ Does the implementation match what the plan specified?
 **How to check:**
 - For each `files_create` entry: does the file exist?
 - For each `files_modify` entry: was the file actually modified? (read it, check for the planned changes)
-- For each chunk: do the implemented changes match the `resume` and `tdd` descriptions?
+- For each chunk: do the implemented changes match the `tdd` description and any `notes`?
 - Check for **drift**: code that was implemented differently than planned
 - Check for **scope creep**: files modified that aren't in any chunk
 
@@ -101,6 +102,20 @@ Are the tests meaningful, correct, and sufficient?
 - Check test count: does it match expectations from the plan's `tdd` fields?
 - Run the test suite to confirm all pass
 
+**UI "no test" exemption — verify it actually applies.**
+When a chunk's `tdd` field claims "Pure UI — no test" or similar, read
+the modified files and grep for state-holder signals:
+
+```bash
+grep -nE "mutableStateOf|remember \{|LaunchedEffect|useState|useEffect|useRef|@State " [chunk-files]
+```
+
+If any of those appear, the exemption is invalid — the chunk has hoisted
+state, derived state, or branching effects that should be unit-tested by
+extracting a state holder. Rendering-only chunks (pure prop/callback
+threading, no logic, no effects) keep the exemption. When the exemption
+is misapplied, FAIL Criterion 3 and recommend extracting the holder.
+
 **Commands to run:**
 Use the project's test and build commands from `PROJECT.md`:
 ```bash
@@ -118,18 +133,28 @@ Use the project's test and build commands from `PROJECT.md`:
 
 ---
 
-### 4. Code Quality
+### 4. Code Quality (Standards + Architectural Gaps)
 
-Does the implementation follow project patterns and conventions?
+Does the implementation follow project patterns, project standards,
+and architectural layer boundaries?
 
-**How to check:**
+**How to check (standards):**
 - Read each created/modified production file
 - Cross-reference against `CLAUDE.md` design rules and architecture patterns
 - Cross-reference against `PROJECT.md` "Standards to Verify" section
 - Verify each standard listed in PROJECT.md is met by the implementation
 
+**How to check (architectural gaps):**
+- Verify layer boundaries are respected (UI → domain → data, no shortcuts)
+- Check that new capabilities accept dependencies via injection
+- Check that no business logic ended up in the wrong layer
+- Verify no circular dependencies were introduced
+- Use `grep` to confirm forbidden imports do not appear (e.g., UI files
+  importing data layer directly when the project's architecture forbids it)
+
 **Report:**
 - Standards violations with file:line references
+- Architecture violations (layer crossings, missed injection points)
 - Pattern deviations (justified deviations are OK — document them)
 
 ---
@@ -152,11 +177,12 @@ Did the implementation break existing functionality?
 
 ---
 
-### 6. Robustness
+### 6. Robustness + Blindspots
 
-Does the implementation handle errors, empty states, and edge cases?
+Does the implementation handle errors, empty states, edge cases, and
+the platform-specific blindspots automated tests typically miss?
 
-**How to check:**
+**How to check (robustness):**
 - For each new function/capability:
   - What happens with empty input? (grep for early returns, empty checks)
   - What happens on external errors? (grep for error handling, try/catch)
@@ -169,10 +195,20 @@ Does the implementation handle errors, empty states, and edge cases?
   - Are writes atomic where the project requires it?
   - Are reads graceful on missing files?
 
+**How to check (blindspots — see PROJECT.md §Blindspots):**
+- **Security:** input validation, injection, auth boundaries
+- **Concurrency:** race conditions, rapid clicks, parallel ops
+- **Error propagation:** errors surface to user, not swallowed
+- **Resource cleanup:** memory, file handles, connections
+- **Platform-specific concerns:** whatever PROJECT.md flags
+  (web: CORS/CSP/XSS/a11y; mobile: dark theme/RTL/permissions;
+  backend: rate limiting/pagination/idempotency; CLI: signals/exit codes)
+
 **Report:**
 - Error paths covered vs uncovered
 - Resource cleanup gaps
 - Missing edge case handling
+- Blindspot risks: what could go wrong, likelihood, mitigation
 
 ---
 
@@ -204,7 +240,7 @@ grep -n "^[[:space:]]*//" [changed-files] | head -20
 Can a future session understand what was done and why?
 
 **How to check:**
-- Is there a post-implementation document? (required by TDD skill Phase 6)
+- Is there a post-implementation document? (required by /implement Phase 6)
 - Does the tracker have `quality_verification` filled in?
 - Are complex decisions documented in code comments or the plan's notes?
 - Can a new session pick up from the tracker alone?
@@ -234,9 +270,9 @@ Output a structured report in this exact format:
 | 1 | Plan Conformance | PASS/WARN/FAIL | [one-line summary] |
 | 2 | Acceptance Criteria | PASS/WARN/FAIL | [N/M criteria verified] |
 | 3 | Test Quality | PASS/WARN/FAIL | [N tests, all passing/N failing] |
-| 4 | Code Quality | PASS/WARN/FAIL | [one-line summary] |
+| 4 | Code Quality (Standards + Architecture) | PASS/WARN/FAIL | [one-line summary] |
 | 5 | Regression | PASS/WARN/FAIL | [N tests pass, build OK/FAIL] |
-| 6 | Robustness | PASS/WARN/FAIL | [one-line summary] |
+| 6 | Robustness + Blindspots | PASS/WARN/FAIL | [one-line summary] |
 | 7 | Dead Code / Cleanup | PASS/WARN/FAIL | [one-line summary] |
 | 8 | Documentation | PASS/WARN/FAIL | [one-line summary] |
 
